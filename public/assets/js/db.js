@@ -1,30 +1,54 @@
 let db;
-const request = window.indexedDB.open("budgetDB", 1);
+const request = indexedDB.open("budgetDB", 1);
 
-request.onupgradeneeded = ({ target }) => {
-  const db = target.result;
-  const objectStore = db.createObjectStore("budgetDB", { keyPath: "ID" });
-  objectStore.createIndex("transactionIndex", "transaction");
+request.onupgradeneeded = function(e) {
+  db = e.target.result;
+  db.createObjectStore("pendingTransactions", { autoIncrement: true });
 };
 
-request.onsuccess = event => {
-  const db = request.result;
-    const transaction = db.transaction(["budgetDB"], "readwrite");
-    const budgetStore = transaction.objectStore("budgetDB");
-    const budgetIndex = budgetStore.index("transactionIndex");
+request.onsuccess = function(e) {
+  db = e.target.result;
 
-    // Adds data to our objectStore
-    budgetStore.add({ ID: 1, transaction: 500 });
-   
-    // Return an item by keyPath
-    const getRequest = budgetStore.get("1");
-    getRequest.onsuccess = () => {
-      console.log(getRequest.result);
-    };
-
-    // Return an item by index
-    const getRequestIdx = budgetIndex.getAll("complete");
-    getRequestIdx.onsuccess = () => {
-      console.log(getRequestIdx.result); 
-    };
+  if (navigator.onLine) {
+    readDB();
+  }
 };
+
+request.onerror = function(e) {
+  console.log("Error: " + e.target.errorCode);
+};
+
+function saveRecord(data) {
+  const transaction = db.transaction(["pendingTransactions"], "readwrite");
+
+  const budgetStore = transaction.objectStore("pendingTransactions");
+
+  budgetStore.add(data);
+}
+
+function readDB() {
+  const transaction = db.transaction(["pendingTransactions"], "readwrite");
+  const budgetStore = transaction.objectStore("pendingTransactions");
+  const getData = budgetStore.getAll();
+
+  getData.onsuccess = function() {
+    if (getData.result.length > 0) {
+      fetch("/api/transaction/bulk", {
+        method: "POST",
+        body: JSON.stringify(getData.result),
+        headers: {
+          Accept: "application/json, text/plain, */*",
+          "Content-Type": "application/json"
+        }
+      })
+      .then(response => response.json())
+      .then(() => {
+        const transaction = db.transaction(["pendingTransactions"], "readwrite");
+        const budgetStore = transaction.objectStore("pendingTransactions");
+        budgetStore.clear();
+      });
+    }
+  };
+}
+
+window.addEventListener("online", readDB);
