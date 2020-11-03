@@ -45,44 +45,19 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
   <script src="assets/js/index.js"></script>
 
-  <!-- <script>
-    const request = window.indexedDB.open("budgetList", 1);
+  <script>
+    const request = window.indexedDB.open("budgetDB", 1);
 
-    // Create schema
-    request.onupgradeneeded = event => {
-      const db = event.target.result;
-      
-      // Creates an object store with a listID keypath that can be used to query on.
-      const toDoListStore = db.createObjectStore("transaction", {keyPath: "ID"});
-      // Creates a statusIndex that we can query on.
-      toDoListStore.createIndex("transactionIndex", "transaction"); 
-    }
-
-    // Opens a transaction, accesses the toDoList objectStore and statusIndex.
-    request.onsuccess = () => {
-      const db = request.result;
-      const transaction = db.transaction(["budgetList"], "readwrite");
-      const budgetStore = transaction.objectStore("budgetList");
-      const transactionIndex = toDoListStore.index("transactionIndex");
-
-      // Adds data to our objectStore
-      toDoListStore.add({ ID: "1", transaction: 500 });
-
-     
-      // Return an item by keyPath
-      const getRequest = budgetStore.get("1");
-      getRequest.onsuccess = () => {
-        console.log(getRequest.result);
-      };
-
-      // Return an item by index
-      const getRequestIdx = statusIndex.getAll();
-      getRequestIdx.onsuccess = () => {
-        console.log(getRequestIdx.result); 
-      }; 
+    request.onupgradeneeded = ({ target }) => {
+      const db = target.result;
+      const objectStore = db.createObjectStore("budgetDB");
+      objectStore.createIndex("transactionIndex", "transaction");
     };
 
-  </script> -->
+    request.onsuccess = event => {
+      console.log(request.result);
+    };
+  </script>
 
   <script>
     if ("serviceWorker" in navigator) {
